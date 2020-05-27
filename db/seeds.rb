@@ -1,8 +1,8 @@
-kind_of_ticket = ["general admission", "floor", "lower level", "upper level"]
-
 Attendee.destroy_all
 Concert.destroy_all
 Ticket.destroy_all
+
+kind_of_ticket = ["general admission", "floor", "lower level", "upper level"]
 
 5.times do
     Attendee.create(name: Faker::Name.name, email: Faker::Internet.email, music_preference: Faker::Music.genre)
