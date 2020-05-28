@@ -2,7 +2,8 @@ class Attendee < ActiveRecord::Base
     has_many :tickets
     has_many :concerts, through: :tickets
 
-    def tickets_owned
-        my_tickets = Ticket.all.find_by(attendee_id: self.id)
+    def add_ticket_to_attendee(ticket)
+        ticket.attendee_id = self.id
     end
+
 end

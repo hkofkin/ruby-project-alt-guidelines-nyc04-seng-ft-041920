@@ -39,12 +39,12 @@ class CommandLineInterface
     def login
         puts "What is your email?"
         email = gets.chomp
-        user = find_email(user)
+        user = find_email(email)
         if find_email(email) == nil
             existing_email_not_found
         else
             CURRENT_ATTENDEE << user
-            home_page(user)
+            home_page
         end
     end
 
@@ -68,7 +68,7 @@ class CommandLineInterface
             Attendee.create(name: attendee_name, email: attendee_email, music_preference: attendee_pref)
             puts "Thank you for creating your account."
             CURRENT_ATTENDEE << user
-            home_page(user)
+            home_page
         else
             email_already_exists(attendee_email)
         end
@@ -93,7 +93,7 @@ class CommandLineInterface
         end
     end
 
-    def home_page(user)
+    def home_page
         # come back and personalize name in welcome message
         # add feature to recommend concerts based on location and music preference
         puts "Welcome! What would you like to do?"
@@ -102,14 +102,14 @@ class CommandLineInterface
         puts "e = edit profile"
         puts "l = logout"
         next_page_select = gets.chomp
-        home_page_selection(next_page_select, user)
+        home_page_selection(next_page_select)
     end
 
-    def home_page_selection(page, user)
+    def home_page_selection(page)
         if page == "b"
             buy_tickets
         elsif page == "v"
-            view_my_tickets(user)
+            view_my_tickets
         elsif page == "e"
             edit_profile
         elsif page == "l"
@@ -140,7 +140,7 @@ class CommandLineInterface
         elsif search_input == "m"
             home_page(user)
         else
-            puts "Please enter either 'b' or 'c'."
+            puts "Invalid input. Please enter either 'b' or 'c'."
             search = gets.chomp
             search_for_concert(search)
         end
@@ -149,59 +149,93 @@ class CommandLineInterface
     def find_concert_by_band
         puts "What band are you looking to see?"
         band_input = gets.chomp
-        concert = Concert.find_by(band: band_input)
+        concert = Concert.all.find_by(band: band_input)
+        if !concert
+            puts "That concert does not exist. Please enter existing concert:"
+            find_concert_by_band
+        end
         view_available_concert_tickets(concert)
     end
 
     def find_concert_by_city
         puts "What city?"
         city_input = gets.chomp
-        concert = Concert.find_by(city: city_input)
+        concert = Concert.all.find_by(city: city_input)
+        if !concert
+            puts "That concert does not exist. Please enter existing concert:"
+            find_concert_by_band
+        end
         view_available_concert_tickets(concert)
     end
 
-    def tickets_available(tickets)
-        tickets != nil
-    end
+    # def tickets_available(tickets_input)
+    #     tickets_input != nil
+    # end
 
-    def view_available_concert_tickets(concert_input)
-        tickets = Ticket.all.find_by(concert_id: concert_input.id)
+    def view_available_concert_tickets(concert_instance)
+        tickets = concert_instance.tickets_available
         # Ticket.all.joins("INNER JOIN concerts ON tickets.concert_id = concerts.id")
         # need to join tables to show (ticket) ticket type, price, (concert) band, venue, and city
-        if tickets_available(tickets)
+        if tickets.empty?
+            puts "Sorry, no tickets are currently available."
+            buy_tickets
+        else
             tp tickets
             puts "Would you like to purchase tickets for this concert?"
             puts "y = yes"
             puts "n = no"
             want_to_purchase = gets.chomp
             purchase?(want_to_purchase, tickets)
+        end
+    end
+
+    def ticket_type_select(type, tickets) 
+        selected_ticket = tickets.select { |ticket_instance| ticket_instance.ticket_type == type }
+        if selected_ticket
+            ticket_type_check_quantity(selected_ticket)
         else 
-            puts "Sorry, no tickets are currently available."
-            buy_tickets
+            puts "This ticket type does not exist for this concert. Please enter one of the available options:"
+            ticket_type = gets.chomp
+            ticket_type_select(type, tickets)
+        end
+    end
+
+    def ticket_type_check_quantity(instance)
+        if instance.count > 1 
+            puts "What ticket type are you looking for?" 
+            ticket_type = gets.chomp
+            ticket_type_select(ticket_type, instance) 
+        else 
+            puts "How many would you like to buy?" 
+            ticket = instance[0]
+            quantity_wanted = gets.chomp
+            total_price = quantity_wanted.to_i * ticket.price
+            puts "Your total price for #{quantity_wanted} tickets is $#{total_price}. Confirm purchase?"
+            puts "y = yes"
+            puts "n = no"
+            confirmation = gets.chomp
+            confirm_purchase(confirmation, ticket)
         end
     end
 
     def purchase?(response, ticket_instance)
         if response == "y"
-            puts "Great! We are happy to reserve tickets for you. How many would you like to buy?"
-            quantity_wanted = gets.chomp
-            total_price = quantity_wanted.to_i * ticket_instance.ticket_price
-            puts "Your total price for #{quantity_wanted} tickets is $#{total_price}. Confirm purchase?"
-            puts "y = yes"
-            puts "n = no"
-            confirmation = gets.chomp
-            confirm_purchase(confirmation)
+            puts "Great! We are happy to reserve tickets for you."
+            ticket_type_check_quantity(ticket_instance) # checks how to proceed based on ticket types
         elsif response == "n"
             puts "Not interested at this time? No problem."
             buy_tickets
         else 
+            puts "Please enter either 'y' or 'n'."
+            want_to_purchase = gets.chomp
+            purchase?(want_to_purchase, tickets)
         end
     end
 
-    def confirm_purchase(input)
+    def confirm_purchase(input, ticket_instance)
         if input == "y"
             puts "Thank you for your purchase! Select 'v' at main menu to view your tickets."
-            Ticket.attendee_id = CURRENT_ATTENDEE.first.id
+            CURRENT_ATTENDEE[0].tickets << ticket_instance 
             home_page
         elsif input == "n"
             puts "Not ready to purchase? No problem. Back to home page..."
@@ -209,20 +243,100 @@ class CommandLineInterface
         else
             puts "Please enter either 'y' or 'n'."
             confirmation = gets.chomp
-            confirm_purchase(confirmation)
+            confirm_purchase(confirmation, ticket_instance)
+        end
+    end
+
+    def view_my_tickets
+        tickets_owned = CURRENT_ATTENDEE[0].tickets
+        if tickets_owned.empty?
+            puts "You have not purchased any tickets."
+            home_page
+        else
+            tp tickets_owned
+            puts "What would you like to do?"
+            puts "1 = cancel purchase"
+            puts "2 = go back to main menu"
+            page = gets.chomp
+            view_tickets_menu_action(page)
+        end
+    end
+
+    def view_tickets_menu_action(input)
+        if input == "1"
+            if CURRENT_ATTENDEE[0].tickets.count > 1
+                puts "Which ticket purchase would you like to cancel?"
+
+            else
+                puts "Are you sure you want to cancel your ticket purchase?"
+                puts "y = yes"
+                puts "n = no"
+                answer = gets.chomp
+                cancel_tickets?(answer)
+            end
+        elsif input == "2"
+            home_page
+        else
+            puts "Invalid input. Please enter either '1' or '2'."
+            page = gets.chomp
+            view_tickets_menu_action(page)
+        end
+    end
+
+    def cancel_tickets?(input)
+        if input == "y"
+            CURRENT_ATTENDEE[0].tickets.clear
+            view_my_tickets
+        elsif input == "n"
+            puts "Ok, your tickets have not been cancelled."
+            view_my_tickets
+        else
+            puts "Invalid input. Please enter either 'y' or 'n'."
+            answer = gets.chomp
+            cancel_tickets?(answer)
         end
     end
 
     def edit_profile
+        puts "What would you like to edit?"
+        puts "1 = name"
+        puts "2 = email"
+        puts "3 = music preference"
+        edit = gets.chomp
+        go_to_edit(edit)
     end
 
-    def view_my_tickets(user)
-        user = Attendee.find(user.id)
-        user.tickets_owned
+    def go_to_edit(input)
+        if input == "1"
+            puts "Please enter your new name:"
+            name = gets.chomp
+            CURRENT_ATTENDEE[0].update(name: name)
+            puts "Your profile has been updated."
+            tp CURRENT_ATTENDEE[0]
+            home_page
+        elsif input == "2"
+            puts "Please enter your new email:"
+            email = gets.chomp
+            CURRENT_ATTENDEE[0].update(email: email)
+            puts "Your profile has been updated."
+            tp CURRENT_ATTENDEE[0]
+            home_page
+        elsif input == "3"
+            puts "Please enter your new music preference:"
+            music_preference = gets.chomp
+            CURRENT_ATTENDEE[0].update(music_preference: music_preference)
+            puts "Your profile has been updated."
+            tp CURRENT_ATTENDEE[0]
+            home_page
+        else
+            puts "Please enter either '1', '2', or '3'."
+            edit = gets.chomp
+            go_to_edit(edit)
+        end
     end
 
     def logout
-        run
         CURRENT_ATTENDEE.clear
+        run
     end
 end

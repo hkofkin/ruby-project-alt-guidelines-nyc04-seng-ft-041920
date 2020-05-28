@@ -6,8 +6,8 @@ class Ticket < ActiveRecord::Base
         self.price
     end
 
-    def add_ticket_to_attendee(attendee)
-        self.attendee_id = attendee.id
+    def find_concert_id
+        self.concert_id
     end
 
 end
