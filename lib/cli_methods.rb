@@ -9,12 +9,12 @@ class CommandLineInterface
 
     def greet
         puts "~ Welcome to Ticket Time ~"
-        puts "Does quarantine have you missing concerts? We feel the same."
+        puts "Who's ready to jam?"
     end
 
     def login_prompt
         puts "Do you have an account?\n
-        y = yes\n
+        y = yes
         n = no\n"
         account_answer = gets.chomp
         attendee_has_account?(account_answer)
@@ -138,7 +138,7 @@ class CommandLineInterface
         elsif search_input == "c"
             find_concert_by_city
         elsif search_input == "m"
-            home_page(user)
+            home_page
         else
             puts "Invalid input. Please enter either 'b' or 'c'."
             search = gets.chomp
@@ -149,28 +149,47 @@ class CommandLineInterface
     def find_concert_by_band
         puts "What band are you looking to see?"
         band_input = gets.chomp
-        concert = Concert.all.find_by(band: band_input)
+        tp concert = Concert.where(band: band_input)
         if !concert
             puts "That concert does not exist. Please enter existing concert:"
             find_concert_by_band
+        elsif concert.count > 1
+            # tp concert_reduced = Concert.where(band: band_input) 
+            filter_bands_by_city(concert) # delete this if change doesn't work
+            # find_concert_by_city
+        else
+            view_available_concert_tickets(concert[0])
         end
-        view_available_concert_tickets(concert)
+    end
+
+    def filter_bands_by_city(concerts_array)
+        puts "What city?"
+        city_input = gets.chomp
+        concerts_array = Concert.where(city: city_input) 
+        view_available_concert_tickets(concerts_array[0])
     end
 
     def find_concert_by_city
         puts "What city?"
         city_input = gets.chomp
-        concert = Concert.all.find_by(city: city_input)
+        tp concert = Concert.where(city: city_input)
         if !concert
-            puts "That concert does not exist. Please enter existing concert:"
+            puts "There are currently no upcoming concerts in that city. Please enter existing city:"
             find_concert_by_band
+        elsif concert.count > 1
+            # tp concert_reduced = Concert.where(city: city_input) 
+            filter_cities_by_band(concert)
+        else
+            view_available_concert_tickets(concert[0])
         end
-        view_available_concert_tickets(concert)
     end
 
-    # def tickets_available(tickets_input)
-    #     tickets_input != nil
-    # end
+    def filter_cities_by_band(concerts_array)
+        puts "What band are you looking to see?"
+        band_input = gets.chomp
+        concerts_array = Concert.where(band: band_input) 
+        view_available_concert_tickets(concerts_array[0])
+    end
 
     def view_available_concert_tickets(concert_instance)
         tickets = concert_instance.tickets_available
@@ -208,20 +227,20 @@ class CommandLineInterface
         else 
             puts "How many would you like to buy?" 
             ticket = instance[0]
-            quantity_wanted = gets.chomp
-            total_price = quantity_wanted.to_i * ticket.price
-            puts "Your total price for #{quantity_wanted} tickets is $#{total_price}. Confirm purchase?"
+            quantity = gets.chomp.to_i
+            total_price = quantity * ticket.price
+            puts "Your total price for #{quantity} tickets is $#{total_price}. Confirm purchase?"
             puts "y = yes"
             puts "n = no"
             confirmation = gets.chomp
-            confirm_purchase(confirmation, ticket)
+            confirm_purchase(confirmation, ticket, quantity)
         end
     end
 
     def purchase?(response, ticket_instance)
         if response == "y"
             puts "Great! We are happy to reserve tickets for you."
-            ticket_type_check_quantity(ticket_instance) # checks how to proceed based on ticket types
+            ticket_type_check_quantity(ticket_instance)
         elsif response == "n"
             puts "Not interested at this time? No problem."
             buy_tickets
@@ -232,8 +251,9 @@ class CommandLineInterface
         end
     end
 
-    def confirm_purchase(input, ticket_instance)
+    def confirm_purchase(input, ticket_instance, quantity)
         if input == "y"
+            ticket_instance.quantity_purchased = quantity
             puts "Thank you for your purchase! Select 'v' at main menu to view your tickets."
             CURRENT_ATTENDEE[0].tickets << ticket_instance 
             home_page
@@ -248,7 +268,7 @@ class CommandLineInterface
     end
 
     def view_my_tickets
-        tickets_owned = CURRENT_ATTENDEE[0].tickets
+        tickets_owned = CURRENT_ATTENDEE[0].view_my_tickets
         if tickets_owned.empty?
             puts "You have not purchased any tickets."
             home_page
@@ -266,7 +286,7 @@ class CommandLineInterface
         if input == "1"
             if CURRENT_ATTENDEE[0].tickets.count > 1
                 puts "Which ticket purchase would you like to cancel?"
-
+                # need to add a way to select which concert to remove
             else
                 puts "Are you sure you want to cancel your ticket purchase?"
                 puts "y = yes"
@@ -322,6 +342,7 @@ class CommandLineInterface
             tp CURRENT_ATTENDEE[0]
             home_page
         elsif input == "3"
+            tp CURRENT_ATTENDEE[0]
             puts "Please enter your new music preference:"
             music_preference = gets.chomp
             CURRENT_ATTENDEE[0].update(music_preference: music_preference)

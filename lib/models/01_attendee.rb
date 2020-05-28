@@ -6,4 +6,8 @@ class Attendee < ActiveRecord::Base
         ticket.attendee_id = self.id
     end
 
+    def view_my_tickets
+        self.tickets
+    end
+
 end

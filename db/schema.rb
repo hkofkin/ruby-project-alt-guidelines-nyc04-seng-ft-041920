@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_05_26_023426) do
+ActiveRecord::Schema.define(version: 2020_05_28_015935) do
 
   create_table "attendees", force: :cascade do |t|
     t.string "name"
@@ -30,6 +30,7 @@ ActiveRecord::Schema.define(version: 2020_05_26_023426) do
     t.integer "concert_id"
     t.string "ticket_type"
     t.integer "price"
+    t.integer "quantity_purchased"
   end
 
 end
