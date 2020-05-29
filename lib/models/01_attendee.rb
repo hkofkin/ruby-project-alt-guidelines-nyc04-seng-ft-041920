@@ -65,17 +65,17 @@ class Attendee < ActiveRecord::Base
         prompt = TTY::Prompt.new
         new_email = prompt.ask("Please enter your new email:")
         self.update(email: new_email)
-        puts "Your profile has been updated."
+        puts "\nYour profile has been updated.".colorize(:color => :black, :background => :green)
         profile_table
     end
 
     def change_music_preference
-        profile_table
+        puts profile_table
         prompt = TTY::Prompt.new
         new_music_pref = prompt.ask("Please enter your new music preference:")
         self.update(music_preference: new_music_pref)
-        puts "Your profile has been updated."
-        profile_table
+        puts "\nYour profile has been updated.".colorize(:color => :black, :background => :green)
+        puts profile_table
     end
 
 end

@@ -98,7 +98,7 @@ MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
     def ticket_type_check_quantity(instance)
         puts "\nGreat! We are happy to reserve tickets for you."
-        quantity = Ticket.select_ticket_quantity
+        quantity = instance.first.select_ticket_quantity
         total_price = quantity * instance.first.price
         prompt.select("Your total price for #{quantity} tickets is $#{total_price}. Confirm purchase?") do |menu|
             menu.choice "Yes", -> { confirm_purchase(instance, quantity) }
