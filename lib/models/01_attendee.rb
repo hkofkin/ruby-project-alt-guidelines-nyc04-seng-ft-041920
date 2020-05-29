@@ -7,7 +7,61 @@ class Attendee < ActiveRecord::Base
     end
 
     def view_my_tickets
-        self.tickets
+        tickets = self.tickets
+        tickets_owned_table = TTY::Table.new header: ['Band', 'Venue', 'City', 'Date Time', 'Ticket Type', 'Price']
+        tickets.map do |ticket|
+            tickets_owned_table << [ticket.concert.band, ticket.concert.venue, ticket.concert.city, ticket.concert.date_time, ticket.ticket_type, ticket.price]
+        end
+        puts tickets_owned_table.render(:unicode)
+        return tickets
+        sleep 1
+    end
+
+    def profile_table
+        profile_table = TTY::Table.new header: ['Name', 'Email', 'Music Preference'], rows: [name, email, music_preference]
+        puts profile_table.render(:unicode)
+    end
+
+    def change_name
+        self.profile_table
+        prompt = TTY::Prompt.new
+        new_name = prompt.ask("Please enter your new name:")
+        self.update(name: name)
+        puts "Your profile has been updated."
+        self
+    end
+
+    def change_email
+    end
+
+    def change_music_preference
+    end
+
+    def self.login
+        prompt = TTY::Prompt.new
+        attendee_email = prompt.ask("What is your email?")
+        found_user = Attendee.find_by(email: attendee_email)
+        if found_user
+            return found_user
+        else
+            prompt.select("That email does not exist in our records. Would you like to create a new account?") do |menu|
+                menu.choice "Create new account", -> { self.create_new_account }
+                menu.choice "Re-enter email", -> { self.login }
+            end
+        end
+    end
+
+    def self.create_new_account
+        prompt = TTY::Prompt.new
+        attendee_email = prompt.ask("Please enter your email:")
+        if Attendee.find_by(email: attendee_email)
+            puts "This email already exists."
+            self.create_new_account
+        else
+            attendee_name = prompt.ask("Please enter your name:")
+            attendee_music_preference = attendee_email = prompt.ask("Please enter your music preference:")
+            Attendee.create(name: attendee_name, email: attendee_email, music_preference: attendee_music_preference)
+        end
     end
 
 end
