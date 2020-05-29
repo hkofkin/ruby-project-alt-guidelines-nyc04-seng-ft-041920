@@ -8,7 +8,7 @@ class Concert < ActiveRecord::Base
             return false
         else
             tickets = Ticket.where(concert_id: self.id)
-            ticket_table = TTY::Table.new header: ['Band', 'Venue', 'City', 'Date Time', 'Ticket Type', 'Price']
+            ticket_table = TTY::Table.new header: ['Artist', 'Venue', 'City', 'Date Time', 'Ticket Type', 'Price']
             tickets.map do |ticket|
                 ticket_table << [self.band, self.venue, self.city, self.date_time, ticket.ticket_type, ticket.price]
             end
@@ -20,9 +20,10 @@ class Concert < ActiveRecord::Base
     end
 
     def self.all_concerts
-        puts "Here is a list of all upcoming concerts:"
+        system "clear"
+        puts "\nHere is a list of all upcoming concerts:"
         all_concerts = self.all
-        concert_table = TTY::Table.new header: ['Band', 'Venue', 'City', 'Date Time']
+        concert_table = TTY::Table.new header: ['Artist', 'Venue', 'City', 'Date Time']
         all_concerts.map do |concert|
             concert_table << [concert.band, concert.venue, concert.city, concert.date_time]
         end
@@ -34,7 +35,7 @@ class Concert < ActiveRecord::Base
         all_concerts = self.all.map do |concert|
             {concert.band => concert}
         end
-        selected_concert = prompt.select("What band are you looking to see?", all_concerts)
+        selected_concert = prompt.select("\nWhat artist are you looking to see?", all_concerts)
     end
 
     def self.list_concerts_by_city
@@ -42,7 +43,7 @@ class Concert < ActiveRecord::Base
         all_concerts = self.all.map do |concert|
             {concert.city => concert}
         end
-        selected_concert = prompt.select("What city?", all_concerts)
+        selected_concert = prompt.select("\nWhat city?", all_concerts)
     end
 
 end

@@ -12,3 +12,4 @@ gem 'tty-table'
 gem "table_print"
 gem 'whirly'
 gem 'paint'
+gem 'colorize'
